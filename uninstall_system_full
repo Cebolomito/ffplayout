@@ -1,1 +1,44 @@
+#!/bin/bash
 
+export DEBIAN_FRONTEND=noninteractive
+
+echo "[+] 1. Encerrando processos e serviços..."
+systemctl stop ffplayout 2>/dev/null || true
+killall -9 ffplayout 2>/dev/null || true
+fuser -k 8787/tcp 2>/dev/null || true
+
+echo "[+] 2. Removendo banco de dados, storage (tv-media), logs e resíduos..."
+rm -rf /usr/share/ffplayout
+rm -rf /var/log/ffplayout
+rm -rf /etc/ffplayout
+rm -rf /var/cache/ffplayout
+rm -rf /run/ffplayout
+rm -rf /root/.sqlite_history
+rm -rf /home/*/.sqlite_history
+
+# Apaga tudo dentro de /var/lib/ffplayout, incluindo a pasta tv-media e storages
+rm -rf /var/lib/ffplayout
+
+echo "[+] 3. Expurgando pacote e resíduos do dpkg/systemd..."
+apt-get purge -y ffplayout 2>/dev/null || true
+dpkg --purge --force-all ffplayout 2>/dev/null || true
+apt-get autoremove -y --purge 2>/dev/null || true
+
+rm -f /etc/systemd/system/multi-user.target.wants/ffplayout.service
+rm -f /etc/systemd/system/ffplayout.service
+rm -f /usr/lib/systemd/system/ffplayout.service
+rm -f /lib/systemd/system/ffplayout.service
+rm -rf /var/lib/systemd/deb-systemd-helper-enabled/ffplayout*
+
+echo "[+] 4. Recriando usuário de sistema ffpu..."
+userdel -f -r ffpu 2>/dev/null || true
+groupdel ffpu 2>/dev/null || true
+addgroup --system ffpu 2>/dev/null || true
+adduser --system --ingroup ffpu --no-create-home ffpu 2>/dev/null || true
+
+echo "[+] 5. Recarregando daemons e liberando cache da memória..."
+systemctl daemon-reload
+systemctl reset-failed
+sync && echo 3 > /proc/sys/vm/drop_caches
+
+echo "[+] Limpeza total concluída! Banco de dados e storage apagados. Pronto para o dpkg -i."
