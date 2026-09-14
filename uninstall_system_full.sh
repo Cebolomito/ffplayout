@@ -8,7 +8,9 @@ DB_PATH="/usr/share/ffplayout/db/ffplayout.db"
 if [ -f "$DB_PATH" ]; then
     # Zera os usuários e limpa os arquivos temporários de memória no próprio arquivo
     python3 -c "import sqlite3; con=sqlite3.connect('$DB_PATH'); con.execute('DELETE FROM auth_user;'); con.execute('VACUUM;'); con.commit(); con.close()" 2>/dev/null || true
-    echo "[+] Tabela auth_user zerada e banco limpo no local original."
+    # Salva uma cópia limpa temporariamente antes de apagar tudo
+    cp "$DB_PATH" /tmp/ffplayout.db
+    echo "[+] Tabela auth_user zerada e banco salvo temporariamente."
 fi
 
 echo "[+] 2. Encerrando processos e serviços..."
@@ -45,9 +47,19 @@ groupdel ffpu 2>/dev/null || true
 addgroup --system ffpu 2>/dev/null || true
 adduser --system --ingroup ffpu --no-create-home ffpu 2>/dev/null || true
 
-echo "[+] 6. Recarregando daemons e liberando cache da memória..."
+echo "[+] 6. Restaurando o banco limpo e ajustando permissões..."
+mkdir -p /usr/share/ffplayout/db
+if [ -f /tmp/ffplayout.db ]; then
+    mv /tmp/ffplayout.db /usr/share/ffplayout/db/ffplayout.db
+fi
+
+chown -R ffpu:ffpu /usr/share/ffplayout
+chmod 775 /usr/share/ffplayout/db 2>/dev/null || true
+chmod 664 /usr/share/ffplayout/db/ffplayout.db 2>/dev/null || true
+
+echo "[+] 7. Recarregando daemons e liberando cache da memória..."
 systemctl daemon-reload
 systemctl reset-failed
 sync && echo 3 > /proc/sys/vm/drop_caches
 
-echo "[+] Limpeza total concluída! Banco zerado inicialmente e depois tudo apagado (banco, storage e playlists). Pronto para o dpkg -i."
+echo "[+] Limpeza total concluída (storage, playlists e banco limpo preservados)! Pronto para o dpkg -i cair direto no /init."
