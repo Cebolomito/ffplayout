@@ -16,7 +16,7 @@ systemctl stop ffplayout 2>/dev/null || true
 killall -9 ffplayout 2>/dev/null || true
 fuser -k 8787/tcp 2>/dev/null || true
 
-echo "[+] 3. Removendo logs, caches, rotas antigas e resíduos (preservando o .db e tv-media)..."
+echo "[+] 3. Removendo logs, caches, rotas antigas e resíduos (preservando o .db, tv-media e playlists)..."
 rm -rf /var/log/ffplayout
 rm -rf /etc/ffplayout
 rm -rf /var/cache/ffplayout
@@ -29,9 +29,9 @@ if [ -d "/usr/share/ffplayout/db" ]; then
     find /usr/share/ffplayout/db -mindepth 1 ! -name 'ffplayout.db' -exec rm -rf {} + 2>/dev/null || true
 fi
 
-# Preserva estritamente a pasta tv-media
+# Preserva estritamente as pastas tv-media e playlists
 if [ -d "/var/lib/ffplayout" ]; then
-    find /var/lib/ffplayout -mindepth 1 -maxdepth 1 ! -name 'tv-media' -exec rm -rf {} + 2>/dev/null || true
+    find /var/lib/ffplayout -mindepth 1 -maxdepth 1 ! -name 'tv-media' ! -name 'playlists' -exec rm -rf {} + 2>/dev/null || true
 fi
 
 echo "[+] 4. Expurgando pacote e resíduos do dpkg/systemd..."
@@ -56,4 +56,4 @@ systemctl daemon-reload
 systemctl reset-failed
 sync && echo 3 > /proc/sys/vm/drop_caches
 
-echo "[+] Limpeza concluída! O banco está zerado e mantido no local. Pode executar o dpkg -i."
+echo "[+] Limpeza concluída! Banco zerado, storage e playlists preservados. Pode executar o dpkg -i."
