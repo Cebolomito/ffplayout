@@ -34,4 +34,7 @@ userdel -f -r ffpu 2>/dev/null || true
 echo "[+] 5. Recarregando daemons"
 systemctl daemon-reload
 
+echo  "[+] 6. Deletando arquivo ffplayout.deb"
+rm -fr ffplayout_v2.3.0-1_amd64.deb 
+
 echo "[+] Limpeza total concluída! Banco zerado inicialmente e depois tudo apagado (banco, storage e playlists). Pronto para o dpkg -i."
